@@ -329,12 +329,26 @@ async def start_http_server():
     await site.start()
 
 
+background_tasks = set()
+
+
+def spawn(coro):
+    # event loop хранит на Task только слабую ссылку - без явного сохранения
+    # сильной ссылки сборщик мусора может собрать задачу прямо во время
+    # выполнения ("Task was destroyed but it is pending!"), что на практике
+    # и обрывало ami_loop сразу после логина на AMI.
+    task = asyncio.create_task(coro)
+    background_tasks.add(task)
+    task.add_done_callback(background_tasks.discard)
+    return task
+
+
 async def main():
     start_baresip()
-    asyncio.create_task(dial_loop())
-    asyncio.create_task(transcribe_loop())
-    asyncio.create_task(recording_tail_loop())
-    asyncio.create_task(ami_loop())
+    spawn(dial_loop())
+    spawn(transcribe_loop())
+    spawn(recording_tail_loop())
+    spawn(ami_loop())
     await start_http_server()
     async with websockets.serve(ws_handler, "0.0.0.0", WS_PORT):
         await asyncio.Future()
