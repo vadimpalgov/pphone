@@ -11,20 +11,35 @@
   #transcript .partial { color: #999; font-style: italic; }
   button { padding: 8px 16px; margin-right: 8px; }
   #status { color: #666; }
+  #loginError { color: #c00; min-height: 1.2em; }
+  #loginScreen input { display: block; width: 100%; margin-bottom: 8px; padding: 6px; box-sizing: border-box; }
 </style>
 </head>
 <body>
-  <h2>pPhone — <span id="myExt"></span></h2>
-  <div id="status">не зарегистрирован</div>
-  <div>
-    <input id="target" placeholder="номер (1001/1002)" />
-    <button id="callBtn">Позвонить</button>
-    <button id="hangupBtn" disabled>Сбросить</button>
+  <div id="loginScreen">
+    <h2>pPhone — вход</h2>
+    <form id="loginForm">
+      <input id="loginExt" placeholder="номер (например 1001)" autocomplete="username" required />
+      <input id="loginPass" type="password" placeholder="пароль" autocomplete="current-password" required />
+      <button type="submit">Войти</button>
+    </form>
+    <div id="loginError"></div>
   </div>
-  <audio id="remoteAudio" autoplay></audio>
 
-  <h3>Транскрипция звонка</h3>
-  <div id="transcript"></div>
+  <div id="mainScreen" style="display:none">
+    <h2>pPhone — <span id="myExt"></span></h2>
+    <div id="status">не зарегистрирован</div>
+    <div>
+      <input id="target" placeholder="номер (1001/1002)" />
+      <button id="callBtn">Позвонить</button>
+      <button id="hangupBtn" disabled>Сбросить</button>
+      <button id="logoutBtn">Выйти</button>
+    </div>
+    <audio id="remoteAudio" autoplay></audio>
+
+    <h3>Транскрипция звонка</h3>
+    <div id="transcript"></div>
+  </div>
 
   <script src="app.js"></script>
 </body>

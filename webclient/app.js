@@ -1,66 +1,101 @@
-const params = new URLSearchParams(window.location.search);
-const myExt = params.get('ext') || '1001';
-const passwords = { '1001': '1001secret', '1002': '1002secret' };
-
-document.getElementById('myExt').textContent = myExt;
-
 const SIP_DOMAIN = 'pphone-sip.parfeon.ru';
-const SIP_WS_URL = `wss://${SIP_DOMAIN}/ws`;
 const TRANSCRIBE_WS_URL = `wss://pphone-transcribe.parfeon.ru/`;
 
-const socket = new JsSIP.WebSocketInterface(SIP_WS_URL);
-const ua = new JsSIP.UA({
-  sockets: [socket],
-  uri: `sip:${myExt}@${SIP_DOMAIN}`,
-  password: passwords[myExt],
-  session_timers: false,
-});
+const loginScreen = document.getElementById('loginScreen');
+const mainScreen = document.getElementById('mainScreen');
+const loginForm = document.getElementById('loginForm');
+const loginExt = document.getElementById('loginExt');
+const loginPass = document.getElementById('loginPass');
+const loginError = document.getElementById('loginError');
+const logoutBtn = document.getElementById('logoutBtn');
 
 const statusEl = document.getElementById('status');
 const callBtn = document.getElementById('callBtn');
 const hangupBtn = document.getElementById('hangupBtn');
 const remoteAudio = document.getElementById('remoteAudio');
+const myExtEl = document.getElementById('myExt');
+
+let ua = null;
 let currentSession = null;
 
-ua.on('registered', () => statusEl.textContent = `зарегистрирован как ${myExt}`);
-ua.on('unregistered', () => statusEl.textContent = 'не зарегистрирован');
-ua.on('registrationFailed', (e) => statusEl.textContent = `ошибка регистрации: ${e.cause}`);
-
-ua.on('newRTCSession', ({ session }) => {
-  currentSession = session;
-  hangupBtn.disabled = false;
-  console.log('newRTCSession', session.direction, session);
-
-  session.on('peerconnection', ({ peerconnection }) => {
-    console.log('peerconnection', peerconnection);
-    peerconnection.ontrack = (event) => {
-      remoteAudio.srcObject = event.streams[0];
-    };
-    peerconnection.oniceconnectionstatechange = () =>
-      console.log('iceConnectionState', peerconnection.iceConnectionState);
+function startUA(ext, password) {
+  const socket = new JsSIP.WebSocketInterface(`wss://${SIP_DOMAIN}/ws`);
+  ua = new JsSIP.UA({
+    sockets: [socket],
+    uri: `sip:${ext}@${SIP_DOMAIN}`,
+    password,
+    session_timers: false,
   });
 
-  session.on('progress', () => console.log('session progress'));
-  session.on('accepted', () => console.log('session accepted'));
-  session.on('ended', (e) => { console.log('session ended', e.cause); currentSession = null; hangupBtn.disabled = true; });
-  session.on('failed', (e) => { console.log('session failed', e.cause, e); currentSession = null; hangupBtn.disabled = true; });
+  ua.on('registered', () => { statusEl.textContent = `зарегистрирован как ${ext}`; loginError.textContent = ''; });
+  ua.on('unregistered', () => statusEl.textContent = 'не зарегистрирован');
+  ua.on('registrationFailed', (e) => {
+    statusEl.textContent = `ошибка регистрации: ${e.cause}`;
+    sessionStorage.removeItem('pphone_ext');
+    sessionStorage.removeItem('pphone_pass');
+    showLogin(`Не удалось войти: ${e.cause}`);
+  });
 
-  if (session.direction === 'incoming') {
-    session.answer({ mediaConstraints: { audio: true, video: false } });
-  }
-});
+  ua.on('newRTCSession', ({ session }) => {
+    currentSession = session;
+    hangupBtn.disabled = false;
 
-ua.on('connecting', () => console.log('ua connecting'));
-ua.on('connected', () => console.log('ua connected'));
-ua.on('disconnected', (e) => console.log('ua disconnected', e));
+    session.on('peerconnection', ({ peerconnection }) => {
+      peerconnection.ontrack = (event) => {
+        remoteAudio.srcObject = event.streams[0];
+      };
+    });
 
-window._debug = { ua, getSession: () => currentSession };
+    session.on('ended', () => { currentSession = null; hangupBtn.disabled = true; });
+    session.on('failed', () => { currentSession = null; hangupBtn.disabled = true; });
 
-ua.start();
+    if (session.direction === 'incoming') {
+      session.answer({ mediaConstraints: { audio: true, video: false } });
+    }
+  });
+
+  ua.start();
+}
+
+function showMain(ext) {
+  myExtEl.textContent = ext;
+  loginScreen.style.display = 'none';
+  mainScreen.style.display = '';
+}
+
+function showLogin(errorText) {
+  loginScreen.style.display = '';
+  mainScreen.style.display = 'none';
+  loginError.textContent = errorText || '';
+}
+
+function login(ext, password) {
+  sessionStorage.setItem('pphone_ext', ext);
+  sessionStorage.setItem('pphone_pass', password);
+  showMain(ext);
+  startUA(ext, password);
+}
+
+loginForm.onsubmit = (e) => {
+  e.preventDefault();
+  const ext = loginExt.value.trim();
+  const password = loginPass.value;
+  if (!ext || !password) return;
+  login(ext, password);
+};
+
+logoutBtn.onclick = () => {
+  if (currentSession) currentSession.terminate();
+  if (ua) ua.stop();
+  ua = null;
+  sessionStorage.removeItem('pphone_ext');
+  sessionStorage.removeItem('pphone_pass');
+  showLogin();
+};
 
 callBtn.onclick = () => {
   const target = document.getElementById('target').value.trim();
-  if (!target) return;
+  if (!target || !ua) return;
   ua.call(`sip:${target}@${SIP_DOMAIN}`, { mediaConstraints: { audio: true, video: false } });
 };
 
@@ -94,3 +129,12 @@ function connectTranscriptWs() {
   ws.onclose = () => setTimeout(connectTranscriptWs, 2000);
 }
 connectTranscriptWs();
+
+// автологин, если в этой вкладке уже входили (sessionStorage, не переживает закрытие вкладки)
+const savedExt = sessionStorage.getItem('pphone_ext');
+const savedPass = sessionStorage.getItem('pphone_pass');
+if (savedExt && savedPass) {
+  login(savedExt, savedPass);
+} else {
+  showLogin();
+}
