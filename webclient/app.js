@@ -193,7 +193,13 @@ hangupBtn.onclick = () => {
 
 // --- живая транскрипция (общая для demo_room) ---
 const transcriptEl = document.getElementById('transcript');
+const clearTranscriptBtn = document.getElementById('clearTranscriptBtn');
 let partialLine = null;
+
+clearTranscriptBtn.onclick = () => {
+  transcriptEl.innerHTML = '';
+  partialLine = null;
+};
 
 function connectTranscriptWs() {
   const ws = new WebSocket(TRANSCRIBE_WS_URL);
