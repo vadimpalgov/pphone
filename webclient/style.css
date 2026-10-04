@@ -1,0 +1,83 @@
+body {
+  background: #f1f3f5;
+}
+
+.transcript-body {
+  height: 220px;
+  overflow-y: auto;
+  background: #fafafa;
+}
+.transcript-body p { margin: 4px 0; }
+.transcript-body .partial { color: #999; font-style: italic; }
+
+#contactsList .list-group-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.call-btn {
+  width: 56px;
+  height: 56px;
+  font-size: 1.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.call-btn-sm {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.ringing-icon {
+  animation: ring 1s infinite;
+  display: inline-block;
+}
+@keyframes ring {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-15deg); }
+  40% { transform: rotate(15deg); }
+  60% { transform: rotate(-10deg); }
+  80% { transform: rotate(10deg); }
+}
+
+.call-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 16px;
+}
+
+.call-card {
+  width: 100%;
+  max-width: 300px;
+}
+
+.active-call-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #212529;
+  color: #fff;
+  padding: 12px 20px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1040;
+}
+
+@media (max-width: 480px) {
+  #mainScreen .container { padding-left: 12px; padding-right: 12px; }
+}
