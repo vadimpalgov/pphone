@@ -25,6 +25,10 @@ function startUA(ext, password) {
     uri: `sip:${ext}@${SIP_DOMAIN}`,
     password,
     session_timers: false,
+    // Asterisk обрывает WS-транспорт без трафика за 32с (idle reap в
+    // res_pjsip). JsSIP сам не шлёт keepalive-пинги, поэтому держим
+    // короткий register_expires — REGISTER-рефреш не даст транспорту заснуть.
+    register_expires: 20,
   });
 
   ua.on('registered', () => { statusEl.textContent = `зарегистрирован как ${ext}`; loginError.textContent = ''; });
