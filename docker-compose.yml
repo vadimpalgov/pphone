@@ -6,13 +6,13 @@ services:
     ports:
       - "10000-10200:10000-10200/udp"
     networks:
-      - proxy
+      - traefik
       - backend
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.pphone-sip.entrypoints=websecure"
-      - "traefik.http.routers.pphone-sip.rule=Host(`sip.pphone.home`)"
-      - "traefik.http.routers.pphone-sip.tls=true"
+      - "traefik.http.routers.pphone-sip.rule=Host(`pphone-sip.parfeon.ru`)"
+      - "traefik.http.routers.pphone-sip.tls.certresolver=letsencrypt"
       - "traefik.http.services.pphone-sip.loadbalancer.server.port=8088"
 
   transcriber:
@@ -28,13 +28,13 @@ services:
       JOIN_EXTEN: "9000"
       WHISPER_MODEL: base
     networks:
-      - proxy
+      - traefik
       - backend
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.pphone-transcribe.entrypoints=websecure"
-      - "traefik.http.routers.pphone-transcribe.rule=Host(`transcribe.pphone.home`)"
-      - "traefik.http.routers.pphone-transcribe.tls=true"
+      - "traefik.http.routers.pphone-transcribe.rule=Host(`pphone-transcribe.parfeon.ru`)"
+      - "traefik.http.routers.pphone-transcribe.tls.certresolver=letsencrypt"
       - "traefik.http.services.pphone-transcribe.loadbalancer.server.port=8765"
 
   webclient:
@@ -42,16 +42,16 @@ services:
     container_name: pphone-webclient
     restart: unless-stopped
     networks:
-      - proxy
+      - traefik
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.pphone-web.entrypoints=websecure"
-      - "traefik.http.routers.pphone-web.rule=Host(`pphone.home`)"
-      - "traefik.http.routers.pphone-web.tls=true"
+      - "traefik.http.routers.pphone-web.rule=Host(`pphone.parfeon.ru`)"
+      - "traefik.http.routers.pphone-web.tls.certresolver=letsencrypt"
       - "traefik.http.services.pphone-web.loadbalancer.server.port=80"
 
 networks:
-  proxy:
+  traefik:
     external: true
   backend:
     driver: bridge

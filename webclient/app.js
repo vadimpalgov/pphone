@@ -4,9 +4,9 @@ const passwords = { '1001': '1001secret', '1002': '1002secret' };
 
 document.getElementById('myExt').textContent = myExt;
 
-const SIP_DOMAIN = 'sip.pphone.home';
+const SIP_DOMAIN = 'pphone-sip.parfeon.ru';
 const SIP_WS_URL = `wss://${SIP_DOMAIN}/ws`;
-const TRANSCRIBE_WS_URL = `wss://transcribe.pphone.home/`;
+const TRANSCRIBE_WS_URL = `wss://pphone-transcribe.parfeon.ru/`;
 
 const socket = new JsSIP.WebSocketInterface(SIP_WS_URL);
 const ua = new JsSIP.UA({
