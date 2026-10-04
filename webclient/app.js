@@ -28,6 +28,11 @@ let ua = null;
 let myExt = null;
 let currentSession = null;
 
+// Без STUN браузер знает только свои приватные host-кандидаты -> ICE между
+// браузером (за NAT) и публичным Asterisk не устанавливается (connectionState
+// уходит в failed, звука нет, хотя SIP-сигнализация отрабатывает нормально).
+const PC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+
 function setStatus(text, variant) {
   statusBadge.textContent = text;
   statusBadge.className = `badge rounded-pill bg-${variant}`;
@@ -88,7 +93,7 @@ function wireSession(session, withWhom) {
 
 function callNumber(target) {
   if (!ua || currentSession) return;
-  currentSession = ua.call(`sip:${target}@${SIP_DOMAIN}`, { mediaConstraints: { audio: true, video: false } });
+  currentSession = ua.call(`sip:${target}@${SIP_DOMAIN}`, { mediaConstraints: { audio: true, video: false }, pcConfig: PC_CONFIG });
   showActiveCall(target, 'вызов...');
   wireSession(currentSession, target);
 }
@@ -124,7 +129,7 @@ function startUA(ext, password) {
     showIncoming(from);
     wireSession(session, from);
 
-    acceptBtn.onclick = () => session.answer({ mediaConstraints: { audio: true, video: false } });
+    acceptBtn.onclick = () => session.answer({ mediaConstraints: { audio: true, video: false }, pcConfig: PC_CONFIG });
     declineBtn.onclick = () => session.terminate();
   });
 
