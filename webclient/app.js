@@ -98,6 +98,8 @@ function callNumber(target) {
   wireSession(currentSession, target);
 }
 
+let keepAliveTimer = null;
+
 function startUA(ext, password) {
   const socket = new JsSIP.WebSocketInterface(`wss://${SIP_DOMAIN}/ws`);
   ua = new JsSIP.UA({
@@ -105,13 +107,21 @@ function startUA(ext, password) {
     uri: `sip:${ext}@${SIP_DOMAIN}`,
     password,
     session_timers: false,
-    // Asterisk обрывает WS-транспорт без трафика за 32с (idle reap в
-    // res_pjsip). Пробовали keepalive через qualify_frequency на сервере —
-    // не сработало (Asterisk не получает ответ на OPTIONS через WS и
-    // помечает контакт Unreachable). Короткий register_expires рабочий
-    // вариант: REGISTER-рефреш не даст транспорту заснуть.
-    register_expires: 20,
   });
+
+  // Asterisk обрывает WS-транспорт без трафика за ~32с (idle reap в
+  // res_pjsip). Пробовали qualify_frequency на сервере (Asterisk не получил
+  // ответ на OPTIONS через WS и помечал контакт Unreachable) и короткий
+  // SIP register_expires на клиенте (недостаточный запас против таймера
+  // браузера приводил к редким пересозданиям транспорта прямо во время
+  // звонка). Вместо этого шлём "голый" double-CRLF ping прямо в сырой
+  // WebSocket — это recognised SIP-over-WS keepalive, не трогающий
+  // регистрацию и состояние контакта вообще.
+  if (keepAliveTimer) clearInterval(keepAliveTimer);
+  keepAliveTimer = setInterval(() => {
+    const rawWs = ua && ua._transport && ua._transport.socket && ua._transport.socket._ws;
+    if (rawWs && rawWs.readyState === WebSocket.OPEN) rawWs.send('\r\n\r\n');
+  }, 12000);
 
   ua.on('registered', () => { setStatus('на линии', 'success'); loginError.textContent = ''; });
   ua.on('unregistered', () => setStatus('нет сети', 'secondary'));
@@ -171,6 +181,7 @@ logoutBtn.onclick = () => {
   if (currentSession) currentSession.terminate();
   if (ua) ua.stop();
   ua = null;
+  if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
   sessionStorage.removeItem('pphone_ext');
   sessionStorage.removeItem('pphone_pass');
   showLogin();
