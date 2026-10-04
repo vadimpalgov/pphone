@@ -107,21 +107,45 @@ def netstring(payload: str) -> bytes:
     return f"{len(data)}:".encode() + data + b","
 
 
-async def dial_loop():
-    # ждём регистрации на Asterisk, затем шлём команду dial через ctrl_tcp.
+# Если звонок бота в demo_room обрывается (например, Asterisk пересоздали
+# при деплое) - сам бот этого не замечает и останется вне комнаты навсегда,
+# звонок никто не передозвонит. bot_in_room обновляется из ami_loop по
+# ConfbridgeJoin/Leave канала бота, redial_supervisor перезванивает, если
+# бота не видно в комнате дольше окна на установление звонка.
+bot_in_room = False
+last_dial_at = 0.0
+
+
+async def send_dial_command():
+    global last_dial_at
+    last_dial_at = time.time()
     # ctrl_tcp ожидает netstring-фрейминг ("<len>:<payload>,"), где payload —
     # JSON {"command": ..., "params": ...}, а не голый текст команды.
-    await asyncio.sleep(5)
     payload = json.dumps({"command": "dial", "params": f"{JOIN_EXTEN}@{SIP_DOMAIN}"})
+    reader, writer = await asyncio.open_connection("127.0.0.1", 4444)
+    writer.write(netstring(payload))
+    await writer.drain()
+    writer.close()
+
+
+async def dial_loop():
+    await asyncio.sleep(5)  # ждём регистрации бота на Asterisk
     for _ in range(15):
         try:
-            reader, writer = await asyncio.open_connection("127.0.0.1", 4444)
-            writer.write(netstring(payload))
-            await writer.drain()
-            writer.close()
+            await send_dial_command()
             return
         except OSError:
             await asyncio.sleep(2)
+
+
+async def redial_supervisor():
+    while True:
+        await asyncio.sleep(15)
+        if not bot_in_room and time.time() - last_dial_at > 15:
+            try:
+                await send_dial_command()
+            except OSError:
+                pass
 
 
 async def broadcast(message: dict):
@@ -185,12 +209,21 @@ def parse_ami_block(buf: bytes) -> dict:
     return msg
 
 
+def is_real_participant(channel: str) -> bool:
+    # бот и служебный канал анонсов ConfBridge тоже шлют ConfbridgeJoin/Leave -
+    # без фильтра счётчик участников никогда не опускался до 0, и запись
+    # звонка зависала открытой навсегда (ровно это и произошло на первом
+    # тестовом звонке).
+    return not (channel.startswith("PJSIP/bot-") or channel.startswith("CBAnn/"))
+
+
 async def ami_loop():
+    global bot_in_room
     # ConfbridgeJoin/ConfbridgeLeave прилетают независимо от количества SIP-
-    # диалогов бота (бот зашёл в demo_room один раз на старте и сидит там
-    # постоянно) - только по ним можно понять, когда в комнате появляется
-    # первый "настоящий" абонент (начало звонка) и когда уходит последний
-    # (конец звонка).
+    # диалогов бота (бот заходит в demo_room один раз и сидит там постоянно) -
+    # только по ним можно понять, когда в комнате появляется первый
+    # "настоящий" абонент (начало звонка) и когда уходит последний (конец
+    # звонка).
     members = set()
     while True:
         try:
@@ -214,20 +247,25 @@ async def ami_loop():
                         event = msg.get("Event")
                         channel = msg.get("Channel")
                         if event == "ConfbridgeJoin" and channel:
-                            members.add(channel)
+                            if channel.startswith("PJSIP/bot-"):
+                                bot_in_room = True
+                            elif is_real_participant(channel):
+                                members.add(channel)
                         elif event == "ConfbridgeLeave" and channel:
-                            members.discard(channel)
+                            if channel.startswith("PJSIP/bot-"):
+                                bot_in_room = False
+                            else:
+                                members.discard(channel)
                         else:
                             continue
 
                         if len(members) >= 2:
                             start_recording()
-                        elif len(members) <= 1:
+                        elif len(members) == 0:
                             stop_recording()
             finally:
                 writer.close()
         except OSError:
-            stop_recording()
             members.clear()
             await asyncio.sleep(3)
 
@@ -368,6 +406,7 @@ def spawn(coro):
 async def main():
     start_baresip()
     spawn(dial_loop())
+    spawn(redial_supervisor())
     spawn(transcribe_loop())
     spawn(recording_tail_loop())
     spawn(ami_loop())
