@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>pPhone</title>
+<script src="https://cdn.jsdelivr.net/npm/jssip@3/dist/jssip.min.js"></script>
+<style>
+  body { font-family: sans-serif; max-width: 480px; margin: 40px auto; }
+  #transcript { border: 1px solid #ccc; height: 200px; overflow-y: auto; padding: 8px; margin-top: 16px; background: #fafafa; }
+  #transcript p { margin: 4px 0; }
+  #transcript .partial { color: #999; font-style: italic; }
+  button { padding: 8px 16px; margin-right: 8px; }
+  #status { color: #666; }
+</style>
+</head>
+<body>
+  <h2>pPhone — <span id="myExt"></span></h2>
+  <div id="status">не зарегистрирован</div>
+  <div>
+    <input id="target" placeholder="номер (1001/1002)" />
+    <button id="callBtn">Позвонить</button>
+    <button id="hangupBtn" disabled>Сбросить</button>
+  </div>
+  <audio id="remoteAudio" autoplay></audio>
+
+  <h3>Транскрипция звонка</h3>
+  <div id="transcript"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
