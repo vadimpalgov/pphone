@@ -2,6 +2,13 @@ services:
   asterisk:
     build: ./asterisk
     container_name: pphone-asterisk
+    # без явного hostname Docker даёт случайный 12-символьный hex id
+    # контейнера; Asterisk использует его как домен в SIP-заголовках
+    # (From) для исходящих плеч звонка. SIP URI host обязан начинаться
+    # с буквы - когда случайный hex-hostname начинался с цифры (~60%
+    # случаев), JsSIP у получателя не мог распарсить заголовок и тихо
+    # ронял INVITE, вызывая то и дело "непроходящие" звонки.
+    hostname: pphone-asterisk
     restart: unless-stopped
     ports:
       - "10000-10200:10000-10200/udp"
