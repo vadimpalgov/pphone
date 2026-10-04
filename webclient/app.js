@@ -225,9 +225,11 @@ async function loadRecordings() {
           <div class="d-flex align-items-center gap-2">
             <span class="small text-secondary">${formatSize(item.size)}</span>
             <a href="${fileUrl}" download class="btn btn-sm btn-outline-secondary py-0 px-2" aria-label="Скачать"><i class="bi bi-download"></i></a>
+            <button class="btn btn-sm btn-outline-danger py-0 px-2 deleteRecordingBtn" aria-label="Удалить"><i class="bi bi-trash"></i></button>
           </div>
         </div>
         <audio controls preload="none" class="w-100" src="${fileUrl}"></audio>`;
+      row.querySelector('.deleteRecordingBtn').onclick = () => deleteRecording(item.name, fileUrl);
       recordingsList.appendChild(row);
     });
   } catch (e) {
@@ -236,6 +238,15 @@ async function loadRecordings() {
 }
 
 refreshRecordingsBtn.onclick = loadRecordings;
+
+async function deleteRecording(name, fileUrl) {
+  if (!confirm('Удалить эту запись?')) return;
+  try {
+    await fetch(fileUrl, { method: 'DELETE' });
+  } finally {
+    loadRecordings();
+  }
+}
 
 // --- живая транскрипция (общая для demo_room) ---
 const transcriptEl = document.getElementById('transcript');

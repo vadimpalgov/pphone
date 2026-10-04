@@ -286,8 +286,16 @@ async def ws_handler(websocket):
 
 @web.middleware
 async def cors_middleware(request, handler):
-    response = await handler(request)
+    # DELETE из браузера идёт с CORS preflight (OPTIONS) - без него запросы
+    # на удаление молча блокируются браузером ещё до того, как долетят до
+    # роутов ниже.
+    if request.method == "OPTIONS":
+        response = web.Response()
+    else:
+        response = await handler(request)
     response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
     return response
 
 
@@ -319,10 +327,24 @@ async def get_recording(request):
     return web.FileResponse(path)
 
 
+async def delete_recording(request):
+    name = request.match_info["name"]
+    if "/" in name or not name.startswith("call_") or not name.endswith(".wav"):
+        raise web.HTTPNotFound()
+    path = RECORDINGS_DIR / name
+    if current_wav_path is not None and path == current_wav_path:
+        raise web.HTTPConflict(text="recording still in progress")
+    if not path.exists():
+        raise web.HTTPNotFound()
+    path.unlink()
+    return web.json_response({"deleted": name})
+
+
 async def start_http_server():
     app = web.Application(middlewares=[cors_middleware])
     app.router.add_get("/api/recordings", list_recordings)
     app.router.add_get("/recordings/{name}", get_recording)
+    app.router.add_delete("/recordings/{name}", delete_recording)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", HTTP_PORT)
