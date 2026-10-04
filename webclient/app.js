@@ -105,6 +105,12 @@ function startUA(ext, password) {
     uri: `sip:${ext}@${SIP_DOMAIN}`,
     password,
     session_timers: false,
+    // Asterisk обрывает WS-транспорт без трафика за 32с (idle reap в
+    // res_pjsip). Пробовали keepalive через qualify_frequency на сервере —
+    // не сработало (Asterisk не получает ответ на OPTIONS через WS и
+    // помечает контакт Unreachable). Короткий register_expires рабочий
+    // вариант: REGISTER-рефреш не даст транспорту заснуть.
+    register_expires: 20,
   });
 
   ua.on('registered', () => { setStatus('на линии', 'success'); loginError.textContent = ''; });
