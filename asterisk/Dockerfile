@@ -3,7 +3,7 @@ FROM debian:bookworm-slim
 ENV DEBIAN_FRONTEND=noninteractive TZ=Europe/Moscow
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential wget ca-certificates \
+        build-essential wget ca-certificates iproute2 \
         libssl-dev libncurses5-dev uuid-dev libjansson-dev \
         libxml2-dev libsqlite3-dev libedit-dev libsrtp2-dev \
         libopus-dev pkg-config openssl && \
