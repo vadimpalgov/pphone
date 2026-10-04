@@ -74,7 +74,12 @@ function wireSession(session, withWhom) {
       remoteAudio.srcObject = event.streams[0];
     };
   });
-  session.on('progress', () => showActiveCall(withWhom, 'вызов...'));
+  // 'progress' срабатывает и на входящей стороне (это означает лишь, что
+  // сами отправили 180 Ringing) — для incoming до реального answer() не
+  // трогаем экран, там остаётся оверлей "входящий звонок".
+  if (session.direction === 'outgoing') {
+    session.on('progress', () => showActiveCall(withWhom, 'вызов...'));
+  }
   session.on('accepted', () => showActiveCall(withWhom, 'в разговоре'));
   session.on('confirmed', () => showActiveCall(withWhom, 'в разговоре'));
   session.on('ended', () => { currentSession = null; hideActiveCall(); hideIncoming(); });
