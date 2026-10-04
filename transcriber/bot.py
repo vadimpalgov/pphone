@@ -141,7 +141,20 @@ async def transcribe_loop():
                     w.setframerate(SAMPLE_RATE)
                     w.writeframes(raw)
 
-                segments, _ = model.transcribe(chunk_path, language="ru")
+                # Без VAD Whisper транскрибирует даже чистую тишину (которой в
+                # конференции большая часть времени, пока никто не говорит) и
+                # на пустом входе типично выдаёт галлюцинации — утечки фраз из
+                # обучающих субтитров ("Редактор субтитров...", "СПОКОЙНАЯ
+                # МУЗЫКА"). vad_filter обрезает чанк до реальных речевых
+                # отрезков (Silero VAD), на оставшейся тишине сегментов просто
+                # не будет.
+                segments, _ = model.transcribe(
+                    chunk_path,
+                    language="ru",
+                    vad_filter=True,
+                    vad_parameters=dict(min_silence_duration_ms=500),
+                    condition_on_previous_text=False,
+                )
                 text = " ".join(s.text.strip() for s in segments).strip()
                 if text:
                     await broadcast({"text": text, "is_final": True})
