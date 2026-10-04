@@ -1,5 +1,6 @@
 const SIP_DOMAIN = 'pphone-sip.parfeon.ru';
 const TRANSCRIBE_WS_URL = `wss://pphone-transcribe.parfeon.ru/`;
+const RECORDINGS_BASE_URL = 'https://pphone-recordings.parfeon.ru';
 const ALL_CONTACTS = ['1001', '1002'];
 
 const loginScreen = document.getElementById('loginScreen');
@@ -87,7 +88,7 @@ function wireSession(session, withWhom) {
   }
   session.on('accepted', () => showActiveCall(withWhom, 'в разговоре'));
   session.on('confirmed', () => showActiveCall(withWhom, 'в разговоре'));
-  session.on('ended', () => { currentSession = null; hideActiveCall(); hideIncoming(); });
+  session.on('ended', () => { currentSession = null; hideActiveCall(); hideIncoming(); setTimeout(loadRecordings, 3000); });
   session.on('failed', () => { currentSession = null; hideActiveCall(); hideIncoming(); });
 }
 
@@ -154,6 +155,7 @@ function showMain(ext) {
   loginScreen.classList.add('d-none');
   mainScreen.classList.remove('d-none');
   renderContacts();
+  loadRecordings();
 }
 
 function showLogin(errorText) {
@@ -190,6 +192,50 @@ logoutBtn.onclick = () => {
 hangupBtn.onclick = () => {
   if (currentSession) currentSession.terminate();
 };
+
+// --- записи звонков ---
+const recordingsList = document.getElementById('recordingsList');
+const refreshRecordingsBtn = document.getElementById('refreshRecordingsBtn');
+
+function formatSize(bytes) {
+  if (bytes > 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
+  return `${Math.round(bytes / 1024)} КБ`;
+}
+
+function formatDate(mtime) {
+  return new Date(mtime * 1000).toLocaleString('ru-RU');
+}
+
+async function loadRecordings() {
+  try {
+    const res = await fetch(`${RECORDINGS_BASE_URL}/api/recordings`);
+    const items = await res.json();
+    recordingsList.innerHTML = '';
+    if (!items.length) {
+      recordingsList.innerHTML = '<div class="list-group-item text-secondary small">записей пока нет</div>';
+      return;
+    }
+    items.forEach((item) => {
+      const fileUrl = `${RECORDINGS_BASE_URL}${item.url}`;
+      const row = document.createElement('div');
+      row.className = 'list-group-item';
+      row.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="small">${formatDate(item.mtime)}</span>
+          <div class="d-flex align-items-center gap-2">
+            <span class="small text-secondary">${formatSize(item.size)}</span>
+            <a href="${fileUrl}" download class="btn btn-sm btn-outline-secondary py-0 px-2" aria-label="Скачать"><i class="bi bi-download"></i></a>
+          </div>
+        </div>
+        <audio controls preload="none" class="w-100" src="${fileUrl}"></audio>`;
+      recordingsList.appendChild(row);
+    });
+  } catch (e) {
+    recordingsList.innerHTML = '<div class="list-group-item text-danger small">не удалось загрузить список</div>';
+  }
+}
+
+refreshRecordingsBtn.onclick = loadRecordings;
 
 // --- живая транскрипция (общая для demo_room) ---
 const transcriptEl = document.getElementById('transcript');

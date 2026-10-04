@@ -34,6 +34,10 @@ services:
       BOT_PASS: botsecret
       JOIN_EXTEN: "9000"
       WHISPER_MODEL: base
+      AMI_USER: transcriber
+      AMI_PASS: amisecret
+    volumes:
+      - recordings:/rec/calls
     networks:
       - traefik
       - backend
@@ -42,7 +46,13 @@ services:
       - "traefik.http.routers.pphone-transcribe.entrypoints=websecure"
       - "traefik.http.routers.pphone-transcribe.rule=Host(`pphone-transcribe.parfeon.ru`)"
       - "traefik.http.routers.pphone-transcribe.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.pphone-transcribe.service=pphone-transcribe"
       - "traefik.http.services.pphone-transcribe.loadbalancer.server.port=8765"
+      - "traefik.http.routers.pphone-recordings.entrypoints=websecure"
+      - "traefik.http.routers.pphone-recordings.rule=Host(`pphone-recordings.parfeon.ru`)"
+      - "traefik.http.routers.pphone-recordings.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.pphone-recordings.service=pphone-recordings"
+      - "traefik.http.services.pphone-recordings.loadbalancer.server.port=8766"
 
   webclient:
     build: ./webclient
@@ -62,3 +72,6 @@ networks:
     external: true
   backend:
     driver: bridge
+
+volumes:
+  recordings:
