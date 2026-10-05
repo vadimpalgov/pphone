@@ -158,6 +158,148 @@ function showMain(ext) {
   loadRecordings();
 }
 
+// --- вид "телефона": нижние табы + часы в статус-баре ---
+const phoneTimeEl = document.getElementById('phoneTime');
+
+function updatePhoneTime() {
+  if (!phoneTimeEl) return;
+  phoneTimeEl.textContent = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
+updatePhoneTime();
+setInterval(updatePhoneTime, 15000);
+
+document.querySelectorAll('.phone-tab-btn').forEach((btn) => {
+  btn.onclick = () => {
+    document.querySelectorAll('.phone-tab-btn').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.phone-tab').forEach((t) => t.classList.add('d-none'));
+    document.getElementById(`tab${btn.dataset.tab.charAt(0).toUpperCase()}${btn.dataset.tab.slice(1)}`).classList.remove('d-none');
+  };
+});
+
+// --- панель "добавить специалиста в звонок" (детская больница, заглушка) ---
+// Чисто визуальная заглушка: реального добавления в SIP-конференцию пока
+// нет, кнопка "+" только помечает врача приглашённым в этом UI.
+const HOSPITALS = [
+  {
+    name: 'БУЗ ВО «Воронежская областная детская клиническая больница №1»',
+    doctors: [
+      { name: 'Иванова Елена Сергеевна', specialty: 'Педиатр' },
+      { name: 'Кузнецов Андрей Викторович', specialty: 'Кардиолог' },
+      { name: 'Смирнова Ольга Павловна', specialty: 'Невролог' },
+    ],
+  },
+  {
+    name: 'БУЗ ВО «Городская детская клиническая больница №1»',
+    doctors: [
+      { name: 'Петров Дмитрий Игоревич', specialty: 'Хирург' },
+      { name: 'Васильева Марина Олеговна', specialty: 'Реаниматолог' },
+      { name: 'Соколов Артём Николаевич', specialty: 'Пульмонолог' },
+    ],
+  },
+  {
+    name: 'БУЗ ВО «Городская детская клиническая больница №2»',
+    doctors: [
+      { name: 'Морозова Татьяна Андреевна', specialty: 'Эндокринолог' },
+      { name: 'Волков Сергей Петрович', specialty: 'Гастроэнтеролог' },
+      { name: 'Лебедева Анна Дмитриевна', specialty: 'Инфекционист' },
+    ],
+  },
+  {
+    name: 'БУЗ ВО «Детская клиническая больница №7»',
+    doctors: [
+      { name: 'Новикова Виктория Романовна', specialty: 'ЛОР' },
+      { name: 'Фёдоров Максим Сергеевич', specialty: 'Ортопед' },
+      { name: 'Егорова Ксения Валерьевна', specialty: 'Офтальмолог' },
+    ],
+  },
+];
+
+const hospitalSearch = document.getElementById('hospitalSearch');
+const specialtyFiltersEl = document.getElementById('specialtyFilters');
+const hospitalListEl = document.getElementById('hospitalList');
+const invitedListEl = document.getElementById('invitedList');
+
+const ALL_SPECIALTIES = ['Все', ...new Set(HOSPITALS.flatMap((h) => h.doctors.map((d) => d.specialty)))];
+let activeSpecialty = 'Все';
+const invited = new Set();
+
+function renderSpecialtyFilters() {
+  specialtyFiltersEl.innerHTML = '';
+  ALL_SPECIALTIES.forEach((s) => {
+    const chip = document.createElement('button');
+    chip.className = `chip${s === activeSpecialty ? ' active' : ''}`;
+    chip.textContent = s;
+    chip.onclick = () => { activeSpecialty = s; renderSpecialtyFilters(); renderHospitalList(); };
+    specialtyFiltersEl.appendChild(chip);
+  });
+}
+
+function renderInvitedList() {
+  if (invited.size === 0) {
+    invitedListEl.innerHTML = 'пока никого';
+    return;
+  }
+  invitedListEl.innerHTML = '';
+  invited.forEach((key) => {
+    const [docName] = key.split('@@');
+    const pill = document.createElement('span');
+    pill.className = 'invited-pill';
+    pill.innerHTML = `${docName} <button aria-label="Убрать"><i class="bi bi-x-circle"></i></button>`;
+    pill.querySelector('button').onclick = () => { invited.delete(key); renderInvitedList(); renderHospitalList(); };
+    invitedListEl.appendChild(pill);
+  });
+}
+
+function renderHospitalList() {
+  const query = hospitalSearch.value.trim().toLowerCase();
+  hospitalListEl.innerHTML = '';
+  HOSPITALS.forEach((hospital) => {
+    const doctors = hospital.doctors.filter((d) => {
+      if (activeSpecialty !== 'Все' && d.specialty !== activeSpecialty) return false;
+      if (!query) return true;
+      return d.name.toLowerCase().includes(query) || d.specialty.toLowerCase().includes(query) || hospital.name.toLowerCase().includes(query);
+    });
+    if (!doctors.length) return;
+
+    const group = document.createElement('details');
+    group.className = 'hospital-group';
+    group.open = !!query || activeSpecialty !== 'Все';
+
+    const summary = document.createElement('summary');
+    summary.innerHTML = `<span><i class="bi bi-hospital me-1 text-primary"></i>${hospital.name}</span><span class="badge bg-secondary rounded-pill">${doctors.length}</span>`;
+    group.appendChild(summary);
+
+    doctors.forEach((d) => {
+      const key = `${d.name}@@${hospital.name}`;
+      const row = document.createElement('div');
+      row.className = 'doctor-row';
+      const isInvited = invited.has(key);
+      row.innerHTML = `
+        <span>
+          <span class="doctor-name d-block">${d.name}</span>
+          <span class="doctor-specialty">${d.specialty}</span>
+        </span>
+        <button class="btn btn-sm ${isInvited ? 'btn-success' : 'btn-outline-primary'} rounded-circle call-btn-sm" aria-label="Добавить в звонок">
+          <i class="bi bi-${isInvited ? 'check-lg' : 'plus-lg'}"></i>
+        </button>`;
+      row.querySelector('button').onclick = () => {
+        if (invited.has(key)) invited.delete(key); else invited.add(key);
+        renderInvitedList();
+        renderHospitalList();
+      };
+      group.appendChild(row);
+    });
+
+    hospitalListEl.appendChild(group);
+  });
+}
+
+hospitalSearch.oninput = renderHospitalList;
+renderSpecialtyFilters();
+renderHospitalList();
+renderInvitedList();
+
 function showLogin(errorText) {
   loginScreen.classList.remove('d-none');
   mainScreen.classList.add('d-none');
