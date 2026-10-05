@@ -15,6 +15,9 @@ BOT_USER = os.environ.get("BOT_USER", "bot")
 BOT_PASS = os.environ.get("BOT_PASS", "botsecret")
 JOIN_EXTEN = os.environ.get("JOIN_EXTEN", "9000")
 WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "base")
+# временный рубильник записи звонков - подозрение на нехватку ресурсов
+# сервера при одновременной работе звонка, транскрибации (Whisper) и записи.
+ENABLE_RECORDING = os.environ.get("ENABLE_RECORDING", "true").lower() not in ("false", "0", "no")
 AMI_PORT = 5038
 AMI_USER = os.environ.get("AMI_USER", "transcriber")
 AMI_PASS = os.environ.get("AMI_PASS", "amisecret")
@@ -157,7 +160,7 @@ async def broadcast(message: dict):
 
 def start_recording():
     global current_wav, current_wav_path
-    if current_wav is not None:
+    if not ENABLE_RECORDING or current_wav is not None:
         return
     RECORDINGS_DIR.mkdir(parents=True, exist_ok=True)
     path = RECORDINGS_DIR / f"call_{time.strftime('%Y%m%d_%H%M%S')}.wav"

@@ -36,6 +36,9 @@ services:
       WHISPER_MODEL: base
       AMI_USER: transcriber
       AMI_PASS: amisecret
+      # временно выключено - проверяем гипотезу, что звонок + транскрибация
+      # + запись одновременно не укладываются в ресурсы сервера
+      ENABLE_RECORDING: "false"
     volumes:
       - recordings:/rec/calls
     networks:
