@@ -36,7 +36,7 @@ const PC_CONFIG = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
 function setStatus(text, variant) {
   statusBadge.textContent = text;
-  statusBadge.className = `badge rounded-pill bg-${variant}`;
+  statusBadge.className = `status-pill status-pill--${variant}`;
 }
 
 function renderContacts() {
@@ -158,21 +158,12 @@ function showMain(ext) {
   loadRecordings();
 }
 
-// --- вид "телефона": нижние табы + часы в статус-баре ---
-const phoneTimeEl = document.getElementById('phoneTime');
-
-function updatePhoneTime() {
-  if (!phoneTimeEl) return;
-  phoneTimeEl.textContent = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-}
-updatePhoneTime();
-setInterval(updatePhoneTime, 15000);
-
-document.querySelectorAll('.phone-tab-btn').forEach((btn) => {
+// --- переключение секций левой навигацией ---
+document.querySelectorAll('.nav-rail-btn').forEach((btn) => {
   btn.onclick = () => {
-    document.querySelectorAll('.phone-tab-btn').forEach((b) => b.classList.remove('active'));
+    document.querySelectorAll('.nav-rail-btn').forEach((b) => b.classList.remove('active'));
     btn.classList.add('active');
-    document.querySelectorAll('.phone-tab').forEach((t) => t.classList.add('d-none'));
+    document.querySelectorAll('.panel-section').forEach((t) => t.classList.add('d-none'));
     document.getElementById(`tab${btn.dataset.tab.charAt(0).toUpperCase()}${btn.dataset.tab.slice(1)}`).classList.remove('d-none');
   };
 });

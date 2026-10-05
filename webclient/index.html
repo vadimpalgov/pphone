@@ -11,10 +11,10 @@
 </head>
 <body>
 
-<div id="loginScreen" class="d-flex align-items-center justify-content-center vh-100">
-  <div class="card shadow-sm p-4 w-100" style="max-width: 360px;">
-    <div class="text-center mb-3">
-      <i class="bi bi-telephone-fill fs-1 text-primary"></i>
+<div id="loginScreen" class="d-flex align-items-center justify-content-center vh-100 login-shell">
+  <div class="login-card p-4 w-100" style="max-width: 360px;">
+    <div class="text-center mb-4">
+      <div class="brand-mark mx-auto mb-3"><i class="bi bi-soundwave"></i></div>
       <h4 class="mt-2 mb-0">pPhone</h4>
       <div class="text-secondary small">вход в учётную запись</div>
     </div>
@@ -33,65 +33,61 @@
   </div>
 </div>
 
-<div id="mainScreen" class="d-none min-vh-100 app-shell">
-  <div class="app-layout">
+<div id="mainScreen" class="d-none app-shell">
 
-    <div class="phone-frame">
-      <div class="phone-notch"></div>
-      <div class="phone-statusbar">
-        <span class="phone-time" id="phoneTime">--:--</span>
-        <span class="phone-ext"><i class="bi bi-telephone-fill me-1"></i>pPhone — <span id="myExt"></span></span>
-        <span class="d-flex align-items-center gap-2">
-          <span id="statusBadge" class="badge rounded-pill bg-secondary">...</span>
-          <button id="logoutBtn" class="btn btn-sm btn-link text-white p-0" aria-label="Выйти"><i class="bi bi-box-arrow-right"></i></button>
-        </span>
-      </div>
-
-      <div class="phone-screen">
-        <div id="tabContacts" class="phone-tab">
-          <div class="card mb-0 border-0">
-            <div class="card-header fw-semibold small text-uppercase text-secondary">Абоненты</div>
-            <div id="contactsList" class="list-group list-group-flush"></div>
-          </div>
-        </div>
-
-        <div id="tabTranscript" class="phone-tab d-none">
-          <div class="card mb-0 border-0">
-            <div class="card-header fw-semibold small text-uppercase text-secondary d-flex align-items-center justify-content-between">
-              <span>Транскрипция звонка</span>
-              <button id="clearTranscriptBtn" class="btn btn-sm btn-outline-secondary py-0 px-2" aria-label="Очистить">Очистить</button>
-            </div>
-            <div id="transcript" class="card-body transcript-body"></div>
-          </div>
-        </div>
-
-        <div id="tabRecordings" class="phone-tab d-none">
-          <div class="card mb-0 border-0">
-            <div class="card-header fw-semibold small text-uppercase text-secondary d-flex align-items-center justify-content-between">
-              <span>Записи звонков</span>
-              <button id="refreshRecordingsBtn" class="btn btn-sm btn-outline-secondary py-0 px-2" aria-label="Обновить">
-                <i class="bi bi-arrow-clockwise"></i>
-              </button>
-            </div>
-            <div id="recordingsList" class="list-group list-group-flush"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="phone-tabbar">
-        <button class="phone-tab-btn active" data-tab="contacts"><i class="bi bi-person-lines-fill"></i><span>Контакты</span></button>
-        <button class="phone-tab-btn" data-tab="transcript"><i class="bi bi-chat-left-text"></i><span>Транскрипция</span></button>
-        <button class="phone-tab-btn" data-tab="recordings"><i class="bi bi-mic"></i><span>Записи</span></button>
-      </div>
-      <div class="phone-home-indicator"></div>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark brand-mark-sm"><i class="bi bi-soundwave"></i></span>pPhone</div>
+    <div class="topbar-right">
+      <span id="statusBadge" class="status-pill">...</span>
+      <span class="ext-pill">#<span id="myExt"></span></span>
+      <button id="logoutBtn" class="icon-btn" aria-label="Выйти"><i class="bi bi-box-arrow-right"></i></button>
     </div>
+  </header>
 
-    <div class="hospital-panel card">
-      <div class="card-header">
+  <div class="app-body">
+    <nav class="nav-rail">
+      <button class="nav-rail-btn active" data-tab="contacts" aria-label="Контакты"><i class="bi bi-person-lines-fill"></i><span>Контакты</span></button>
+      <button class="nav-rail-btn" data-tab="transcript" aria-label="Транскрипция"><i class="bi bi-chat-left-text"></i><span>Транскрипция</span></button>
+      <button class="nav-rail-btn" data-tab="recordings" aria-label="Записи"><i class="bi bi-mic"></i><span>Записи</span></button>
+    </nav>
+
+    <main class="main-panel">
+      <section id="tabContacts" class="panel-section">
+        <div class="section-card">
+          <div class="section-header">Абоненты</div>
+          <div id="contactsList" class="list-group list-group-flush"></div>
+        </div>
+      </section>
+
+      <section id="tabTranscript" class="panel-section d-none">
+        <div class="section-card">
+          <div class="section-header d-flex align-items-center justify-content-between">
+            <span>Транскрипция звонка</span>
+            <button id="clearTranscriptBtn" class="btn btn-sm btn-outline-secondary py-0 px-2" aria-label="Очистить">Очистить</button>
+          </div>
+          <div id="transcript" class="transcript-body"></div>
+        </div>
+      </section>
+
+      <section id="tabRecordings" class="panel-section d-none">
+        <div class="section-card">
+          <div class="section-header d-flex align-items-center justify-content-between">
+            <span>Записи звонков</span>
+            <button id="refreshRecordingsBtn" class="btn btn-sm btn-outline-secondary py-0 px-2" aria-label="Обновить">
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
+          </div>
+          <div id="recordingsList" class="list-group list-group-flush"></div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="hospital-panel section-card">
+      <div class="section-header">
         <div class="fw-semibold">Добавить специалиста в звонок</div>
         <div class="small text-secondary">детская больница — консультация со смежным специалистом</div>
       </div>
-      <div class="card-body hospital-panel-body">
+      <div class="hospital-panel-body">
         <input id="hospitalSearch" class="form-control form-control-sm mb-2" placeholder="Поиск по врачу или больнице...">
         <div id="specialtyFilters" class="specialty-filters mb-2"></div>
         <div id="hospitalList" class="hospital-list"></div>
@@ -100,36 +96,34 @@
           <div id="invitedList" class="invited-list text-secondary small">пока никого</div>
         </div>
       </div>
-      <div class="card-footer small text-secondary">
+      <div class="hospital-panel-footer small text-secondary">
         Приглашённый специалист сразу увидит всю историю транскрипции этого звонка, если использует pPhone.
       </div>
-    </div>
-
+    </aside>
   </div>
-
-  <div style="height: 88px;" class="flex-shrink-0"></div>
 
   <audio id="remoteAudio" autoplay></audio>
 </div>
 
 <div id="incomingOverlay" class="call-overlay d-none">
-  <div class="card text-center p-4 shadow-lg call-card">
-    <i class="bi bi-telephone-inbound fs-1 text-success mb-2 ringing-icon"></i>
-    <div class="fs-5 fw-semibold" id="incomingFrom">...</div>
-    <div class="text-secondary small mb-3">входящий звонок</div>
-    <div class="d-flex justify-content-around">
-      <button id="declineBtn" class="btn btn-danger rounded-circle call-btn" aria-label="Отклонить"><i class="bi bi-telephone-x-fill"></i></button>
-      <button id="acceptBtn" class="btn btn-success rounded-circle call-btn" aria-label="Принять"><i class="bi bi-telephone-fill"></i></button>
+  <div class="call-card text-center">
+    <div class="call-avatar pulsing"><i class="bi bi-person-fill"></i></div>
+    <div class="fs-5 fw-semibold mt-3" id="incomingFrom">...</div>
+    <div class="text-secondary small mb-4">входящий звонок</div>
+    <div class="d-flex justify-content-center gap-4">
+      <button id="declineBtn" class="btn-fab btn-fab-danger" aria-label="Отклонить"><i class="bi bi-telephone-x-fill"></i></button>
+      <button id="acceptBtn" class="btn-fab btn-fab-success" aria-label="Принять"><i class="bi bi-telephone-fill"></i></button>
     </div>
   </div>
 </div>
 
 <div id="activeCallBar" class="active-call-bar d-none">
-  <div>
+  <div class="call-avatar call-avatar-sm"><i class="bi bi-person-fill"></i></div>
+  <div class="active-call-info">
     <div class="fw-semibold" id="activeCallWith">...</div>
     <div class="small opacity-75" id="activeCallState">...</div>
   </div>
-  <button id="hangupBtn" class="btn btn-danger rounded-circle call-btn" aria-label="Завершить"><i class="bi bi-telephone-x-fill"></i></button>
+  <button id="hangupBtn" class="btn-fab btn-fab-danger btn-fab-sm" aria-label="Завершить"><i class="bi bi-telephone-x-fill"></i></button>
 </div>
 
 <script src="app.js"></script>
